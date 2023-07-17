@@ -1,0 +1,5 @@
+greenlet==2.0.2
+mysql-connector==2.2.9
+psycopg2==2.9.6
+SQLAlchemy==2.0.19
+typing_extensions==4.7.1
