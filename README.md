@@ -3,7 +3,7 @@
 this project aims to write a script which will help to fetch data from different database and store them in a single database
 
 
-## Step 1:
+## Step 1: Connecting to Database
 
 - Put all the credential in the <b>credential.json</b> file.
 - This is needed to keep all the db connections and table with source name in a database. (Source database is preferable)
@@ -18,4 +18,7 @@ this project aims to write a script which will help to fetch data from different
     "port" : "5432"
 }
 ```
+
+## Step2 : generating config Tables
+
 
