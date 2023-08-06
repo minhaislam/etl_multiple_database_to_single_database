@@ -20,3 +20,97 @@ def getConnectionCredentials():
     get_result = postgres_connection_cursor.fetchall()
     postgres_connection.close()
     return get_result
+
+def gettable_names(dest_cursor,source_db_name):
+    sql_query = f"select * from test.etl_table_conf where is_active =true and dbname ='{source_db_name}' order by id asc;"
+    dest_cursor.execute(sql_query)
+    get_tables = dest_cursor.fetchall()
+    return get_tables
+
+
+
+
+def fetch_max_id_dest(destination_db_cursor,destination_table_name,destination_schema_name,destination_target_column):
+    print('Fetching data from Destination....')
+    print(f"{destination_db_cursor},{destination_table_name},{destination_schema_name},{destination_target_column}")
+    sql = f"SELECT COALESCE(max({destination_target_column}),0) as {destination_target_column} FROM {destination_schema_name}.{destination_table_name}; "    
+    print(sql)
+    destination_db_cursor.execute(sql)   
+    max_id = destination_db_cursor.fetchone()
+    print('Max ID',max_id)
+    return max_id[f'{destination_target_column.lower()}']
+
+
+
+
+def fetch_max_id_source(source_db_cursor,source_table_name,sourc_schema_name,source_target_column):
+    print('Fetching data from source....')
+    sql = f"SELECT COALESCE(max({source_target_column}),0) as {source_target_column} FROM {sourc_schema_name}.{source_table_name}; " 
+    print(sql)
+    source_db_cursor.execute(sql)   
+    max_id_2 = source_db_cursor.fetchone()
+    print('Max ID2: ',max_id_2)
+    return max_id_2[f'{source_target_column}']
+
+
+
+
+def connect_src(src_connection):
+    source_connection = ''
+    source_cursor = ''
+    if src_connection['source_db'] == 'mysql':
+        try:
+            source_connection = mysql.connector.connect(
+                                                    host=src_connection['source_credential']['host_name'],
+                                                    user=src_connection['source_credential']['user_name'],
+                                                    password=src_connection['source_credential']['user_password']
+                                                    )
+
+            source_cursor = source_connection.cursor(dictionary=True)
+            print('mysql connection successful')
+        except Exception as e:
+            print(e)
+    elif src_connection['source_db'] == 'sqlserver':
+        try:    
+            # print('Src Database:',src_connection['source_credential']['database_name'])
+            # print('Src User:',src_connection['source_credential']['user_name'])
+            # print('Src Pass:',src_connection['source_credential']['user_password'])
+            # print('Src Host:',src_connection['source_credential']['host_name'])
+            # print('Src Port:',src_connection['source_credential']['port_name'])
+                
+            source_connection = pymssql.connect(database = src_connection['source_credential']['database_name'],
+                                            user = src_connection['source_credential']['user_name'],
+                                            password = src_connection['source_credential']['user_password'],
+                                            host= src_connection['source_credential']['host_name'],
+                                            port = src_connection['source_credential']['port_name']
+                                            
+                                                )
+            
+            source_cursor = source_connection.cursor(as_dict=True)
+            print('MSSQL Source connection successful')
+        except Exception as e:
+            print(e)
+    elif src_connection['source_db'] == 'postgres':
+        try:    
+            # print('Src Database:',src_connection['source_credential']['database_name'])
+            # print('Src User:',src_connection['source_credential']['user_name'])
+            # print('Src Pass:',src_connection['source_credential']['user_password'])
+            # print('Src Host:',src_connection['source_credential']['host_name'])
+            # print('Src Port:',src_connection['source_credential']['port_name'])
+            source_connection = psycopg2.connect(
+                                                    database = src_connection['source_credential']['database_name'],
+                                                    user = src_connection['source_credential']['user_name'],
+                                                    password = src_connection['source_credential']['user_password'],
+                                                    host= src_connection['source_credential']['host_name'],
+                                                    port = src_connection['source_credential']['port_name'],
+                                                )
+
+            source_cursor = source_connection.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
+            print('Postgres Source connection successful')
+        except Exception as e:
+            print(e)
+    return [source_connection,source_cursor]
+
+if __name__ == '__main__':
+    get_credentials = getConnectionCredentials() # fetch Database Configurations
+    getConnection(get_credentials) # fetch D
