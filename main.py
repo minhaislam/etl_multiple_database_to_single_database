@@ -170,6 +170,55 @@ def make_sperate_path_for_general_table(records):
         data_list.clear()
     return list_of_tuple
 
+
+def update_to_destination(**update_arguments):
+    print('Primary Column Table : ',update_arguments['table_primary_column'])
+    sql_query_column_data_type= f'''               
+                                                
+                                        select
+                                column_name,
+								udt_name 
+                            from
+                                information_schema.columns
+                            where
+                                table_schema = '{update_arguments['destination_schema']}'
+                                and table_name = '{update_arguments['destination_table']}'
+                               -- and column_name != '{update_arguments['table_primary_column']}';
+                                
+                                                '''
+                
+    print(sql_query_column_data_type)
+    destination_db_cursor = update_arguments['destination_db_connection'].cursor()
+    destination_db_cursor.execute(sql_query_column_data_type)
+    table_info = destination_db_cursor.fetchall()
+
+    print(table_info)
+    field_names = tuple([i[0] for i in table_info])
+    data_points = tuple([i[0] for i in table_info if i[0]!=update_arguments['table_primary_column']])
+    # others = [i[1] for i in table_info]
+    print(field_names)
+    field_namess = ', '.join(field_names)
+    print(type(field_namess))
+
+    srt_value = [f'{data_points[i]}=e.{data_points[i]}' for i in range(len(data_points))]
+    srt_value_1 = ', '.join(srt_value)
+    print(srt_value_1)
+    insert_string = f'''UPDATE {update_arguments['destination_schema']}.{update_arguments['destination_table']} AS t 
+                                SET {srt_value_1} 
+                                FROM (VALUES %s) AS e({field_namess})
+                                WHERE e.{update_arguments['table_primary_column']} = t.{update_arguments['table_primary_column']};'''
+
+    print(insert_string)
+
+
+    try:
+        print(update_arguments['rows_to_insert'])
+        psycopg2.extras.execute_values (destination_db_cursor, insert_string, update_arguments['rows_to_insert'], template=None, page_size=10000)
+        update_arguments['destination_db_connection'].commit()
+
+    except ValueError as typo:
+        print(typo)
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
