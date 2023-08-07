@@ -147,6 +147,13 @@ def connect_dest(dest_connection):
     return [destination_connection,destination_cursor]
 
 
+def truncate_table(**truncate_arguments):
+    destination_db_cursor = truncate_arguments['destination_db_connection'].cursor()
+    insert_string = f'''truncate {truncate_arguments['destination_schema']}.{truncate_arguments['destination_table']}; '''
+    print(insert_string)
+    destination_db_cursor.execute(insert_string)
+    truncate_arguments['destination_db_connection'].commit()
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
