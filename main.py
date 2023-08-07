@@ -276,6 +276,17 @@ def insert_to_destination(**insert_arguments):
         # break
     return [status,success]
 
+
+
+
+def handle_string_literal_character(v_list_of_tuple):
+    final_data_set = []
+    for i in v_list_of_tuple:
+        v_modified_tuple = tuple(str(item).replace("\x00",' ') for item in i)
+        final_data_set.append(v_modified_tuple)
+
+    return final_data_set
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
