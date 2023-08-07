@@ -111,6 +111,42 @@ def connect_src(src_connection):
             print(e)
     return [source_connection,source_cursor]
 
+
+
+def connect_dest(dest_connection):
+    destination_connection = ''
+    destination_cursor = ''
+    if dest_connection['destination_db'] == 'postgres':
+        try:
+            destination_connection = psycopg2.connect(
+                                                    database = dest_connection['destination_credential']['database_name'],
+                                                    user = dest_connection['destination_credential']['user_name'],
+                                                    password = dest_connection['destination_credential']['user_password'],
+                                                    host= dest_connection['destination_credential']['host_name'],
+                                                    port = dest_connection['destination_credential']['port_name'],
+                                                )
+
+            destination_cursor = destination_connection.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
+            print('postgres DWH connection successful')
+        except Exception as e:
+            print(e)
+    elif dest_connection['destination_db'] == 'sqlserver':
+        try:
+                destination_connection = pymssql.connect(
+                                                        database = dest_connection['destination_credential']['database_name'],
+                                                        user = dest_connection['destination_credential']['user_name'],
+                                                        password = dest_connection['destination_credential']['user_password'],
+                                                        host= dest_connection['destination_credential']['host_name'],
+                                                        port = dest_connection['destination_credential']['port_name'],
+                                                    )
+
+                destination_cursor = destination_connection.cursor(as_dict=True)
+                print('MSSQL DWH connection successful')
+        except Exception as e:
+            print(e)
+    return [destination_connection,destination_cursor]
+
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
