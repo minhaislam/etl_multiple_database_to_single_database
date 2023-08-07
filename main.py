@@ -219,6 +219,63 @@ def update_to_destination(**update_arguments):
     except ValueError as typo:
         print(typo)
 
+
+
+def insert_to_destination(**insert_arguments):
+    sql_query_column_data_type= f'''               
+                                                
+                                        select
+                                column_name,
+								udt_name 
+                            from
+                                information_schema.columns
+                            where
+                                table_schema = '{insert_arguments['destination_schema']}'
+                                and table_name = '{insert_arguments['destination_table']}';
+                                
+                                                '''
+                
+
+    destination_db_cursor = insert_arguments['destination_db_connection'].cursor()
+    destination_db_cursor.execute(sql_query_column_data_type)
+    table_info = destination_db_cursor.fetchall()
+
+
+    field_names = [i[0] for i in table_info]
+    others = [i[1] for i in table_info]
+    print(others)
+
+    field_namess = ', '.join(field_names)
+
+    srt_value = [f'%s::{others[i]}' for i in range(len(field_names))]
+    srt_value_1 = ', '.join(srt_value)
+
+    # res = [type(ele) for ele in insert_arguments['rows_to_insert'][0]]
+
+    
+ 
+# printing result
+    # print("The data types of tuple in order are : " + str(res))
+
+    insert_string = f'''insert into {insert_arguments['destination_schema']}.{insert_arguments['destination_table']} ({field_namess}) values ({srt_value_1}) '''
+    # print(insert_string)
+    try:
+        # print(insert_arguments['rows_to_insert'])
+        psycopg2.extras.execute_batch(destination_db_cursor,insert_string,make_sperate_path_for_general_table(insert_arguments['rows_to_insert']), page_size=10000)
+        insert_arguments['destination_db_connection'].commit()
+        status = 'Success'
+        success = True
+    except ValueError as typo:
+        print(typo)
+        rows_to_insert = handle_string_literal_character(insert_arguments['rows_to_insert'])
+        psycopg2.extras.execute_batch(destination_db_cursor,insert_string,rows_to_insert)
+        insert_arguments['destination_db_connection'].commit()
+        status = 'Success'
+        success = True
+
+        # break
+    return [status,success]
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
