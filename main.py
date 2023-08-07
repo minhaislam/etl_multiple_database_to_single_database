@@ -154,6 +154,22 @@ def truncate_table(**truncate_arguments):
     destination_db_cursor.execute(insert_string)
     truncate_arguments['destination_db_connection'].commit()
 
+
+def make_sperate_path_for_general_table(records):
+    list_of_tuple = []
+    data_list = []
+    datas = records
+    for data in datas:
+        for each_data in data:
+            if type(each_data)is list:
+                data_list.append(json.dumps(each_data))
+            else:
+                data_list.append(each_data)
+
+        list_of_tuple.append(tuple(data_list))
+        data_list.clear()
+    return list_of_tuple
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
