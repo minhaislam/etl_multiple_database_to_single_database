@@ -336,7 +336,25 @@ def getConnection(get_credentials):
 
 
 
+def update_status(**log_details):
+    destination_db_cursor = log_details['destination_db_conn'].cursor()
+    # destination_db_cursor.execute(sql_query_column_data_type)
+    insert_string = f'''update test.etl_table_conf
+                            set last_table_updated = current_timestamp 
+                            where destination_table ='{log_details['destination_table_name']}'; '''
+    print(insert_string)
+    destination_db_cursor.execute(insert_string)
+    log_details['destination_db_conn'].commit()
 
+
+def keep_log(**log_details):
+    destination_db_cursor = log_details['destination_db_conn'].cursor()
+    # destination_db_cursor.execute(sql_query_column_data_type)
+    insert_string = f'''insert into test.etl_status_log (table_name,is_successful,message) values (%s,%s,%s) '''
+    print(insert_string)
+    print([({log_details['log_table']},{log_details['successful_status']},{log_details['insertion_status']})])
+    psycopg2.extras.execute_batch(destination_db_cursor,insert_string,[(log_details['log_table'],log_details['successful_status'],log_details['insertion_status'])])
+    log_details['destination_db_conn'].commit()
 
 
 if __name__ == '__main__':
