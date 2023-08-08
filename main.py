@@ -447,6 +447,28 @@ def fetch_and_update_data(**get_arguments):
         print('no data to fetch')
     return get_insert_status
 
+
+
+def fetch_and_insert_nonincremental_data(**get_arguments):
+
+    source_cursor = get_arguments['source_connection'].cursor()
+    sql_query_to_dump= f'''               
+                                        
+                        select
+                            * 
+                from {get_arguments['source_db_name']}.{get_arguments['source_table_name']} ;
+                                        '''
+    print(sql_query_to_dump)
+    source_cursor.execute(sql_query_to_dump)
+    new_rows = source_cursor.fetchall()
+    if new_rows:
+        truncate_table(destination_db_connection = get_arguments['destination_db_connection'],destination_table = get_arguments['destination_table_name'],destination_schema =   get_arguments['destination_schema_name'])
+        get_status = insert_to_destination(rows_to_insert = new_rows,destination_db_connection = get_arguments['destination_db_connection'],destination_table = get_arguments['destination_table_name'],destination_schema =   get_arguments['destination_schema_name'])
+
+    else:
+        get_status=['no data to fetch',True]
+    return get_status
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
