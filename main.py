@@ -287,6 +287,58 @@ def handle_string_literal_character(v_list_of_tuple):
 
     return final_data_set
 
+
+
+
+def getConnection(get_credentials):
+    for get_credential in get_credentials:
+        print(get_credential)
+        # print(get_credential['source_db'])
+        get_src_connection = connect_src(get_credential)
+        get_destination_connection = connect_dest(get_credential)
+        table_lists = gettable_names(get_destination_connection[1],get_credential['source_db_name'])
+        # print(table_list)
+        for table_list in table_lists: 
+            if table_list['is_autoincremental'] == True  :
+                print(f"Working on Incremental table:{table_list['source_table']} ")
+                print(f"{get_destination_connection[1]},{table_list['destination_table']},{table_list['destination_schema']},{table_list['primary_column']}")
+                
+                # table_list['chunk_size']
+                # is_updateable
+                if table_list['data_insertion_type'] == 'partial':
+                    destination_max_id = fetch_max_id_dest(get_destination_connection[1],table_list['destination_table'],table_list['destination_schema'],table_list['primary_column'])
+                    print(f"Destination Table {table_list['destination_schema']}.{table_list['destination_table']} column {table_list['primary_column']} Max Id : {destination_max_id}")
+                    source_max_id = fetch_max_id_source(get_src_connection[1],table_list['source_table'],table_list['source_db_or_schema'],table_list['primary_column'])
+                    print(f"Source Table {table_list['dbname']}.{table_list['source_table']} column {table_list['primary_column']} Max Id : {source_max_id}")
+                    get_final_status = fetch_and_insert_data(source_connection = get_src_connection[0],source_table_name =table_list['source_table'],source_db_name = table_list['source_db_or_schema'],source_primary_column=table_list['primary_column'],source_table_last_id = source_max_id,destination_db_connection = get_destination_connection[0],destination_table_name = table_list['destination_table'],destination_schema_name = table_list['destination_schema'],destination_table_last_id=destination_max_id,fetch_data_per_loop = table_list['chunk_size'])
+                    if table_list['is_updateable'] == True:
+                        get_update_status = fetch_and_update_data(source_connection = get_src_connection[0],source_table_name =table_list['source_table'],source_db_name = table_list['source_db_or_schema'],source_primary_column=table_list['primary_column'],destination_db_connection = get_destination_connection[0],destination_table_name = table_list['destination_table'],destination_schema_name = table_list['destination_schema'],table_last_update_date=table_list['last_table_updated'],update_colum_name=table_list['update_column'])
+                        update_status(destination_db_conn =get_destination_connection[0],destination_table_name = table_list['destination_table'])
+                    else:
+                        print(f'''Update not required for {table_list['destination_table']}''')
+
+                else:
+                    print('Auto Incremental But needs full refresh')
+                    truncate_table(destination_db_connection = get_destination_connection[0],destination_table = table_list['destination_table'],destination_schema =   table_list['destination_schema'])
+                    destination_max_id = fetch_max_id_dest(get_destination_connection[1],table_list['destination_table'],table_list['destination_schema'],table_list['primary_column'])
+                    print(f"Destination Table {table_list['destination_schema']}.{table_list['destination_table']} column {table_list['primary_column']} Max Id : {destination_max_id}")
+                    source_max_id = fetch_max_id_source(get_src_connection[1],table_list['source_table'],table_list['source_db_or_schema'],table_list['primary_column'])
+                    print(f"Source Table {table_list['dbname']}.{table_list['source_table']} column {table_list['primary_column']} Max Id : {source_max_id}")
+                    get_final_status = fetch_and_insert_data(source_connection = get_src_connection[0],source_table_name =table_list['source_table'],source_db_name = table_list['source_db_or_schema'],source_primary_column=table_list['primary_column'],source_table_last_id = source_max_id,destination_db_connection = get_destination_connection[0],destination_table_name = table_list['destination_table'],destination_schema_name = table_list['destination_schema'],destination_table_last_id=destination_max_id,fetch_data_per_loop = table_list['chunk_size'])
+
+            else:
+                # print(table_list)
+                print(f"Working on Non-Incremental table:{table_list['source_table']} ")
+                get_final_status = fetch_and_insert_nonincremental_data(source_connection = get_src_connection[0],source_table_name =table_list['source_table'],source_db_name = table_list['source_db_or_schema'],destination_db_connection = get_destination_connection[0],destination_table_name = table_list['destination_table'],destination_schema_name = table_list['destination_schema'])
+            
+            keep_log(destination_db_conn =get_destination_connection[0],log_table = table_list['destination_table'],successful_status = get_final_status[1],insertion_status = get_final_status[0])
+            
+
+
+
+
+
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
