@@ -357,6 +357,96 @@ def keep_log(**log_details):
     log_details['destination_db_conn'].commit()
 
 
+def fetch_and_insert_data(**get_arguments):
+    # print(get_arguments)
+    min_value = get_arguments['destination_table_last_id'] 
+    max_value =get_arguments['source_table_last_id']
+    print(min_value,'------->',max_value)
+
+    
+    if max_value> min_value:
+        start_index = min_value
+        end_index = start_index+get_arguments['fetch_data_per_loop']
+        max_id_value_diff = max_value-start_index
+        range_value = math.ceil(max_id_value_diff/get_arguments['fetch_data_per_loop'])
+
+
+        
+        source_cursor = get_arguments['source_connection'].cursor()
+        get_insert_status = ''
+        try:
+            for i in range(0,range_value):
+
+                sql_query_to_dump= f'''               
+                                                    
+                                    select
+                                        * 
+                            from {get_arguments['source_db_name']}.{get_arguments['source_table_name']} e where e.{get_arguments['source_primary_column']} > {str(start_index)} and e.{get_arguments['source_primary_column']} <= {str(end_index)};
+                                                    '''
+
+                print(sql_query_to_dump)
+                source_cursor.execute(sql_query_to_dump)
+                new_rows = source_cursor.fetchall()
+                print(type(source_cursor))
+                get_insert_status =insert_to_destination(rows_to_insert = new_rows,destination_db_connection = get_arguments['destination_db_connection'],destination_table = get_arguments['destination_table_name'],destination_schema =   get_arguments['destination_schema_name'])
+                start_index = end_index
+                end_index = end_index+get_arguments['fetch_data_per_loop']
+        except Exception as e:
+            get_insert_status = [str(e),False]
+
+    else:
+        get_insert_status = ['no data to fetch',True]
+        print('no data to fetch')
+    return get_insert_status
+
+
+def fetch_and_update_data(**get_arguments):
+
+    start_time = ''
+    now = datetime.datetime.now()
+    default_date_range = get_arguments['table_last_update_date'] 
+    if get_arguments['table_last_update_date'] is None:
+        get_time  =now
+        current_time = get_time.strftime('%Y-%m-%d %H:%M:%S')
+        print(current_time)
+        time_duration = now- timedelta(hours=6)
+        start_time = time_duration.strftime('%Y-%m-%d %H:%M:%S')
+        print('No DB date')
+    else:
+        get_time  =now
+        current_time = get_time.strftime('%Y-%m-%d %H:%M:%S')
+        start_time =  default_date_range
+        print('has DB date')
+    v_update_column_name = get_arguments['update_colum_name'] 
+
+
+    source_cursor = get_arguments['source_connection'].cursor()
+    get_insert_status = ['error',False]
+    try:
+
+
+        sql_query_to_dump= f'''               
+                                            
+                            select
+                                * 
+                    from {get_arguments['source_db_name']}.{get_arguments['source_table_name']} e where e.{v_update_column_name} >= '{str(start_time)}' and e.{v_update_column_name} <= '{str(current_time)}';
+                                            '''
+            
+        print(sql_query_to_dump)
+        source_cursor.execute(sql_query_to_dump)
+        new_rows = source_cursor.fetchall()
+        print(new_rows)
+        get_update_status = update_to_destination(rows_to_insert = new_rows,destination_db_connection = get_arguments['destination_db_connection'],destination_table = get_arguments['destination_table_name'],destination_schema =   get_arguments['destination_schema_name'],table_primary_column = get_arguments['source_primary_column'])
+        print(get_update_status)
+
+    except Exception as e:
+        get_insert_status = [str(e),False]
+
+    else:
+        get_insert_status = ['no data to fetch',True]
+        print('no data to fetch')
+    return get_insert_status
+
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
     getConnection(get_credentials) # fetch D
