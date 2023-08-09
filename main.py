@@ -7,7 +7,7 @@ import pymssql
 from psycopg2.extensions import Binary
 from psycopg2.extras import Json
 from psycopg2.extensions import register_adapter
-register_adapter(dict, Json)
+register_adapter(dict, Json) ## Handles dict type data and converts it to json.
 from DB_connection import postgres_connection
 import datetime
 from datetime import timedelta
@@ -54,7 +54,7 @@ def fetch_max_id_source(source_db_cursor,source_table_name,sourc_schema_name,sou
 
 
 
-
+## This script connect to Source Database. All the DB are tested.
 def connect_src(src_connection):
     source_connection = ''
     source_cursor = ''
@@ -112,7 +112,7 @@ def connect_src(src_connection):
     return [source_connection,source_cursor]
 
 
-
+## This script connect to Destination Database. Only Postgres DB is tested.
 def connect_dest(dest_connection):
     destination_connection = ''
     destination_cursor = ''
@@ -147,6 +147,7 @@ def connect_dest(dest_connection):
     return [destination_connection,destination_cursor]
 
 
+## Truncate is used for those tables where full table is refreshed.
 def truncate_table(**truncate_arguments):
     destination_db_cursor = truncate_arguments['destination_db_connection'].cursor()
     insert_string = f'''truncate {truncate_arguments['destination_schema']}.{truncate_arguments['destination_table']}; '''
@@ -154,7 +155,7 @@ def truncate_table(**truncate_arguments):
     destination_db_cursor.execute(insert_string)
     truncate_arguments['destination_db_connection'].commit()
 
-
+## To handle list type data which are inserted into json type column.
 def make_sperate_path_for_general_table(records):
     list_of_tuple = []
     data_list = []
@@ -171,6 +172,7 @@ def make_sperate_path_for_general_table(records):
     return list_of_tuple
 
 
+## Destination table data is updated.
 def update_to_destination(**update_arguments):
     print('Primary Column Table : ',update_arguments['table_primary_column'])
     sql_query_column_data_type= f'''               
@@ -250,12 +252,7 @@ def insert_to_destination(**insert_arguments):
     srt_value = [f'%s::{others[i]}' for i in range(len(field_names))]
     srt_value_1 = ', '.join(srt_value)
 
-    # res = [type(ele) for ele in insert_arguments['rows_to_insert'][0]]
 
-    
- 
-# printing result
-    # print("The data types of tuple in order are : " + str(res))
 
     insert_string = f'''insert into {insert_arguments['destination_schema']}.{insert_arguments['destination_table']} ({field_namess}) values ({srt_value_1}) '''
     # print(insert_string)
@@ -278,7 +275,7 @@ def insert_to_destination(**insert_arguments):
 
 
 
-
+## MSSQL log table gives error for some rows. It is handled heres
 def handle_string_literal_character(v_list_of_tuple):
     final_data_set = []
     for i in v_list_of_tuple:
@@ -471,4 +468,4 @@ def fetch_and_insert_nonincremental_data(**get_arguments):
 
 if __name__ == '__main__':
     get_credentials = getConnectionCredentials() # fetch Database Configurations
-    getConnection(get_credentials) # fetch D
+    getConnection(get_credentials) 
