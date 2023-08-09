@@ -15,14 +15,14 @@ import json
 postgres_connection_cursor = postgres_connection.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
 
 def getConnectionCredentials():
-    sql_query = 'select * from test.conf_table where is_active is true order by id asc;'
+    sql_query = 'select * from conf.conf_table where is_active is true order by id asc;'
     postgres_connection_cursor.execute(sql_query)
     get_result = postgres_connection_cursor.fetchall()
     postgres_connection.close()
     return get_result
 
 def gettable_names(dest_cursor,source_db_name):
-    sql_query = f"select * from test.etl_table_conf where is_active =true and dbname ='{source_db_name}' order by id asc;"
+    sql_query = f"select * from conf.etl_table_conf where is_active =true and dbname ='{source_db_name}' order by id asc;"
     dest_cursor.execute(sql_query)
     get_tables = dest_cursor.fetchall()
     return get_tables
@@ -339,7 +339,7 @@ def getConnection(get_credentials):
 def update_status(**log_details):
     destination_db_cursor = log_details['destination_db_conn'].cursor()
     # destination_db_cursor.execute(sql_query_column_data_type)
-    insert_string = f'''update test.etl_table_conf
+    insert_string = f'''update conf.etl_table_conf
                             set last_table_updated = current_timestamp 
                             where destination_table ='{log_details['destination_table_name']}'; '''
     print(insert_string)
@@ -350,7 +350,7 @@ def update_status(**log_details):
 def keep_log(**log_details):
     destination_db_cursor = log_details['destination_db_conn'].cursor()
     # destination_db_cursor.execute(sql_query_column_data_type)
-    insert_string = f'''insert into test.etl_status_log (table_name,is_successful,message) values (%s,%s,%s) '''
+    insert_string = f'''insert into conf.etl_status_log (table_name,is_successful,message) values (%s,%s,%s) '''
     print(insert_string)
     print([({log_details['log_table']},{log_details['successful_status']},{log_details['insertion_status']})])
     psycopg2.extras.execute_batch(destination_db_cursor,insert_string,[(log_details['log_table'],log_details['successful_status'],log_details['insertion_status'])])
